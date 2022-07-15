@@ -8,11 +8,11 @@
 
 @implementation RNPdfScannerManager
 
-- (dispatch_queue_t)methodQueue
+/*- (dispatch_queue_t)methodQueue
 {
     return dispatch_get_main_queue();
 }
-
+*/
 RCT_EXPORT_MODULE()
 
 RCT_EXPORT_VIEW_PROPERTY(onPictureTaken, RCTDirectEventBlock)
