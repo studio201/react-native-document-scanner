@@ -388,22 +388,41 @@
                  enhancedImage = [self filteredImageUsingContrastFilterOnImage:enhancedImage];
              }
 
-             if (weakSelf.isBorderDetectionEnabled && rectangleDetectionConfidenceHighEnough(_imageDedectionConfidence))
+             if (weakSelf.isBorderDetectionEnabled && rectangleDetectionConfidenceHighEnough(self->_imageDedectionConfidence))
              {
                  CIRectangleFeature *rectangleFeature = [self biggestRectangleInRectangles:[[self highAccuracyRectangleDetector] featuresInImage:enhancedImage]];
+                 @autoreleasepool {
+                     if (rectangleFeature)
+                     {
 
-                 if (rectangleFeature)
-                 {
-                     enhancedImage = [self correctPerspectiveForImage:enhancedImage withFeatures:rectangleFeature];
 
-                     UIGraphicsBeginImageContext(CGSizeMake(enhancedImage.extent.size.height, enhancedImage.extent.size.width));
-                     [[UIImage imageWithCIImage:enhancedImage scale:1.0 orientation:UIImageOrientationRight] drawInRect:CGRectMake(0,0, enhancedImage.extent.size.height, enhancedImage.extent.size.width)];
-                     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-                     UIImage *initialImage = [UIImage imageWithData:imageData];
-                     UIGraphicsEndImageContext();
 
-                     [weakSelf hideGLKView:NO completion:nil];
-                     completionHandler(image, initialImage, rectangleFeature);
+                         //UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0);
+                         enhancedImage = [self correctPerspectiveForImage:enhancedImage withFeatures:rectangleFeature];
+
+
+
+                         dispatch_sync(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                             CGRect rect = CGRectMake(0,0, enhancedImage.extent.size.height, enhancedImage.extent.size.width);
+
+                             CGSize newSize = CGSizeMake(enhancedImage.extent.size.height,enhancedImage.extent.size.width);
+                             UIGraphicsBeginImageContextWithOptions(newSize, NO, 1);
+
+                             UIImage *tmpImage = [UIImage imageWithCIImage:enhancedImage scale:1.0 orientation:UIImageOrientationRight];
+                             NSLog(@"width %f,height %f", enhancedImage.extent.size.width, enhancedImage.extent.size.height);
+                             [tmpImage drawInRect:rect blendMode:kCGBlendModeHue alpha:1.0];
+
+
+                             UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+                             UIImage *initialImage = [UIImage imageWithData:imageData];
+                             UIGraphicsEndImageContext();
+                             [weakSelf hideGLKView:NO completion:nil];
+                             completionHandler(image, initialImage, rectangleFeature);
+
+                         });
+
+
+                     }
                  }
              } else {
                  [weakSelf hideGLKView:NO completion:nil];
