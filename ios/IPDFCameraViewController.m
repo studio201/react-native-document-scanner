@@ -203,10 +203,14 @@
 
     if (self.context && _coreImageContext)
     {
-        [_coreImageContext drawImage:image inRect:self.bounds fromRect:image.extent];
-        [self.context presentRenderbuffer:GL_RENDERBUFFER];
+        dispatch_queue_t layerQ = dispatch_queue_create("layerQ", NULL);
+        dispatch_async(layerQ, ^{
+            [_coreImageContext drawImage:image inRect:self.bounds fromRect:image.extent];
+            [self.context presentRenderbuffer:GL_RENDERBUFFER];
 
-        [_glkView setNeedsDisplay];
+            [_glkView setNeedsDisplay];
+
+        });
     }
 }
 
@@ -227,8 +231,11 @@
 - (void)start
 {
     _isStopped = NO;
+    dispatch_queue_t globalQueue =  dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
+    dispatch_async(globalQueue, ^{
 
-    [self.captureSession startRunning];
+        [self.captureSession startRunning];
+    });
 
     float detectionRefreshRate = _detectionRefreshRateInMS;
     CGFloat detectionRefreshRateInSec = detectionRefreshRate/100;
@@ -248,8 +255,11 @@
 - (void)stop
 {
     _isStopped = YES;
+    dispatch_queue_t globalQueue =  dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
+    dispatch_async(globalQueue, ^{
 
-    [self.captureSession stopRunning];
+        [self.captureSession stopRunning];
+    });
 
     [_borderDetectTimeKeeper invalidate];
 
