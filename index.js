@@ -74,16 +74,16 @@ class PdfScanner extends React.Component {
   UNSAFE_componentWillMount() {
     if (Platform.OS === "android") {
       const { onPictureTaken, onProcessing } = this.props;
-      DeviceEventEmitter.addListener("onPictureTaken", onPictureTaken);
-      DeviceEventEmitter.addListener("onProcessingChange", onProcessing);
+      DeviceEventEmitter.addEventListener("onPictureTaken", onPictureTaken);
+      DeviceEventEmitter.addEventListener("onProcessingChange", onProcessing);
     }
   }
 
   componentWillUnmount() {
     if (Platform.OS === "android") {
       const { onPictureTaken, onProcessing } = this.props;
-      DeviceEventEmitter.removeListener("onPictureTaken", onPictureTaken);
-      DeviceEventEmitter.removeListener("onProcessingChange", onProcessing);
+      DeviceEventEmitter.removeEventListener("onPictureTaken", onPictureTaken);
+      DeviceEventEmitter.removeEventListener("onProcessingChange", onProcessing);
     }
   }
 
