@@ -16,6 +16,9 @@ const CameraManager = NativeModules.RNPdfScannerManager || {};
 class PdfScanner extends React.Component {
   constructor(props) {
     super(props);
+    this.onPictureTakenListener = null;
+    this.onProcessingChangeListener = null;
+
     this.state = {
       permissionsAuthorized: Platform.OS === "ios"
     };
@@ -74,16 +77,18 @@ class PdfScanner extends React.Component {
   UNSAFE_componentWillMount() {
     if (Platform.OS === "android") {
       const { onPictureTaken, onProcessing } = this.props;
-      DeviceEventEmitter.addEventListener("onPictureTaken", onPictureTaken);
-      DeviceEventEmitter.addEventListener("onProcessingChange", onProcessing);
+      this.onPictureTakenListener = DeviceEventEmitter.addEventListener("onPictureTaken", onPictureTaken);
+      this.onProcessingChangeListener =  DeviceEventEmitter.addEventListener("onProcessingChange", onProcessing);
     }
   }
 
   componentWillUnmount() {
     if (Platform.OS === "android") {
       const { onPictureTaken, onProcessing } = this.props;
-      DeviceEventEmitter.removeEventListener("onPictureTaken", onPictureTaken);
-      DeviceEventEmitter.removeEventListener("onProcessingChange", onProcessing);
+     // DeviceEventEmitter.removeEventListener("onPictureTaken", onPictureTaken);
+     // DeviceEventEmitter.removeEventListener("onProcessingChange", onProcessing);
+      this.onPictureTakenListener.remove();
+      this.onProcessingChangeListener.remove();
     }
   }
 
