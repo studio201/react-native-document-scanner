@@ -77,18 +77,30 @@ class PdfScanner extends React.Component {
   UNSAFE_componentWillMount() {
     if (Platform.OS === "android") {
       const { onPictureTaken, onProcessing } = this.props;
-      this.onPictureTakenListener = DeviceEventEmitter.addEventListener("onPictureTaken", onPictureTaken);
-      this.onProcessingChangeListener =  DeviceEventEmitter.addEventListener("onProcessingChange", onProcessing);
+      if (typeof DeviceEventEmitter.addEventListener === "function") {
+        this.onPictureTakenListener = DeviceEventEmitter.addEventListener("onPictureTaken", onPictureTaken);
+        this.onProcessingChangeListener =  DeviceEventEmitter.addEventListener("onProcessingChange", onProcessing);
+      }else if(typeof DeviceEventEmitter.addListener === "function") {
+        this.onPictureTakenListener = DeviceEventEmitter.addEventListener("onPictureTaken", onPictureTaken);
+        this.onProcessingChangeListener =  DeviceEventEmitter.addEventListener("onProcessingChange", onProcessing);
+      }
+
     }
   }
 
   componentWillUnmount() {
     if (Platform.OS === "android") {
       const { onPictureTaken, onProcessing } = this.props;
-     // DeviceEventEmitter.removeEventListener("onPictureTaken", onPictureTaken);
-     // DeviceEventEmitter.removeEventListener("onProcessingChange", onProcessing);
-      this.onPictureTakenListener.remove();
-      this.onProcessingChangeListener.remove();
+
+      if (typeof DeviceEventEmitter.removeEventListener === "function") {
+         DeviceEventEmitter.removeEventListener("onPictureTaken", onPictureTaken);
+         DeviceEventEmitter.removeEventListener("onProcessingChange", onProcessing);
+      }
+      else if(typeof this.onPictureTakenListener.remove === "function") {
+        this.onPictureTakenListener.remove();
+        this.onProcessingChangeListener.remove();
+      }
+
     }
   }
 
