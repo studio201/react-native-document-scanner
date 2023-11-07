@@ -8,12 +8,19 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -30,6 +37,8 @@ public class Utils {
 
     private final SharedPreferences mSharedPref;
     private Context _context;
+
+    private static final String TAG = "Utils";
 
     // constructor
     public Utils(Context context) {
@@ -205,14 +214,54 @@ public class Utils {
     }
 
     public static void addImageToGallery(final String filePath, final Context context) {
-
         ContentValues values = new ContentValues();
 
         values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
         values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-        values.put(MediaStore.MediaColumns.DATA, filePath);
 
-        context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        // Check if version is Android Q or higher
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            Log.d(TAG, "addImageToGallery 1" );
+            // Use RELATIVE_PATH
+            // The relative path is like 'Pictures/MyApp/'.
+            // You need to extract this from the absolute file path.
+            String relativePath = Environment.DIRECTORY_PICTURES + File.separator + "MyApp";
+            values.put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath);
+            values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+            Log.d(TAG, "addImageToGallery 2" );
+        } else {
+            // Use DATA for versions below Android Q
+            values.put(MediaStore.MediaColumns.DATA, filePath);
+            Log.d(TAG, "addImageToGallery 3" );
+        }
+
+        try {
+            Log.d(TAG, "addImageToGallery 4" );
+            Uri uri = context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            Log.d(TAG, "addImageToGallery 5" );
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && uri != null) {
+                Log.d(TAG, "addImageToGallery 6" );
+                try (OutputStream stream = context.getContentResolver().openOutputStream(uri)) {
+                    // Assuming 'filePath' is a path to a file, we need to copy the file content to the output stream.
+                    try (InputStream inputStream = new FileInputStream(filePath)) {
+                        byte[] buffer = new byte[1024];
+                        int length;
+                        while ((length = inputStream.read(buffer)) > 0) {
+                            stream.write(buffer, 0, length);
+                        }
+                    }
+                }
+                Log.d(TAG, "addImageToGallery 7" );
+                values.clear();
+                values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                Log.d(TAG, "addImageToGallery 8" );
+                context.getContentResolver().update(uri, values, null, null);
+                Log.d(TAG, "addImageToGallery 9" );
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "addImageToGallery " + e.getMessage() + "; " + filePath);
+        }
+        Log.d(TAG, "addImageToGallery 10" );
     }
 
     public static void removeImageFromGallery(String filePath, Context context) {

@@ -76,29 +76,40 @@ class PdfScanner extends React.Component {
 
   UNSAFE_componentWillMount() {
     if (Platform.OS === "android") {
+      console.log("PdfScanner.UNSAFE_componentWillMount 1");
       const { onPictureTaken, onProcessing } = this.props;
       if (typeof DeviceEventEmitter.addEventListener === "function") {
+        console.log("PdfScanner.UNSAFE_componentWillMount 2");
         this.onPictureTakenListener = DeviceEventEmitter.addEventListener("onPictureTaken", onPictureTaken);
         this.onProcessingChangeListener =  DeviceEventEmitter.addEventListener("onProcessingChange", onProcessing);
+        console.log("PdfScanner.UNSAFE_componentWillMount 3");
       }else if(typeof DeviceEventEmitter.addListener === "function") {
-        this.onPictureTakenListener = DeviceEventEmitter.addEventListener("onPictureTaken", onPictureTaken);
-        this.onProcessingChangeListener =  DeviceEventEmitter.addEventListener("onProcessingChange", onProcessing);
+        console.log("PdfScanner.UNSAFE_componentWillMount 4");
+        this.onPictureTakenListener = DeviceEventEmitter.addListener("onPictureTaken", onPictureTaken);
+        this.onProcessingChangeListener =  DeviceEventEmitter.addListener("onProcessingChange", onProcessing);
+        console.log("PdfScanner.UNSAFE_componentWillMount 5");
       }
+
 
     }
   }
 
   componentWillUnmount() {
     if (Platform.OS === "android") {
+      console.log("PdfScanner.componentWillUnmount 1");
       const { onPictureTaken, onProcessing } = this.props;
-
+      console.log("PdfScanner.componentWillUnmount 2");
       if (typeof DeviceEventEmitter.removeEventListener === "function") {
+        console.log("PdfScanner.componentWillUnmount 3");
          DeviceEventEmitter.removeEventListener("onPictureTaken", onPictureTaken);
          DeviceEventEmitter.removeEventListener("onProcessingChange", onProcessing);
+        console.log("PdfScanner.componentWillUnmount 4");
       }
       else if(typeof this.onPictureTakenListener.remove === "function") {
+        console.log("PdfScanner.componentWillUnmount 5");
         this.onPictureTakenListener.remove();
         this.onProcessingChangeListener.remove();
+        console.log("PdfScanner.componentWillUnmount 6");
       }
 
     }
