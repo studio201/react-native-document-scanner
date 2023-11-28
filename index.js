@@ -18,14 +18,21 @@ class PdfScanner extends React.Component {
     super(props);
     this.onPictureTakenListener = null;
     this.onProcessingChangeListener = null;
-
+    console.log("PdfScanner.constructor 1");
     this.state = {
-      permissionsAuthorized: Platform.OS === "ios"
+      permissionsAuthorized: Platform.OS === "ios" || Platform.Version>31
     };
+
+    console.log("PdfScanner.constructor 2");
+
   }
 
   onPermissionsDenied = () => {
-    if (this.props.onPermissionsDenied) this.props.onPermissionsDenied();
+    if (this.props.onPermissionsDenied){
+      console.log("PdfScanner.onPermissionsDenied");
+      this.props.onPermissionsDenied();
+    }
+
   };
 
   componentDidMount() {
@@ -35,20 +42,28 @@ class PdfScanner extends React.Component {
   async getAndroidPermissions() {
     if (Platform.OS !== "android") return;
     try {
+      console.log("PdfScanner.getAndroidPermissions 1");
       const granted = await PermissionsAndroid.requestMultiple([
         PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
         PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
       ]);
+      console.log("PdfScanner.getAndroidPermissions 2; "+Platform.Version+"; "+JSON.stringify(granted));
 
       if (
-        granted["android.permission.READ_EXTERNAL_STORAGE"] ===
+          (granted["android.permission.READ_EXTERNAL_STORAGE"] ===
           PermissionsAndroid.RESULTS.GRANTED &&
         granted["android.permission.WRITE_EXTERNAL_STORAGE"] ===
-          PermissionsAndroid.RESULTS.GRANTED
-      )
+          PermissionsAndroid.RESULTS.GRANTED) || Platform.Version>31
+      ){
         this.setState({ permissionsAuthorized: true });
-      else this.onPermissionsDenied();
+      }
+
+      else{
+        console.log("PdfScanner.getAndroidPermissions 3");
+        this.onPermissionsDenied();
+      }
     } catch (err) {
+      console.log("PdfScanner.getAndroidPermissions 4"+err.getMessage());
       this.onPermissionsDenied();
     }
   }
@@ -123,6 +138,7 @@ class PdfScanner extends React.Component {
   render() {
     if (!this.state.permissionsAuthorized) return null;
     return (
+
       <RNPdfScanner
         {...this.props}
         onPictureTaken={this.sendOnPictureTakenEvent.bind(this)}
@@ -137,6 +153,7 @@ class PdfScanner extends React.Component {
         }
         detectionRefreshRateInMS={this.props.detectionRefreshRateInMS || 50}
       />
+
     );
   }
 }
