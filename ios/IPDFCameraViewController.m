@@ -383,70 +383,73 @@
 
     [self.stillImageOutput captureStillImageAsynchronouslyFromConnection:videoConnection completionHandler: ^(CMSampleBufferRef imageSampleBuffer, NSError *error)
      {
-         NSData *imageData = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageSampleBuffer];
-
-         if (weakSelf.cameraViewType == IPDFCameraViewTypeBlackAndWhite || weakSelf.isBorderDetectionEnabled)
-         {
-             CIImage *enhancedImage = [CIImage imageWithData:imageData];
-
-             if (weakSelf.cameraViewType == IPDFCameraViewTypeBlackAndWhite)
+        if(imageSampleBuffer != NULL){
+            NSData *imageData = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageSampleBuffer];
+            
+             if (weakSelf.cameraViewType == IPDFCameraViewTypeBlackAndWhite || weakSelf.isBorderDetectionEnabled)
              {
-                 enhancedImage = [self filteredImageUsingEnhanceFilterOnImage:enhancedImage];
+                 CIImage *enhancedImage = [CIImage imageWithData:imageData];
+
+                 if (weakSelf.cameraViewType == IPDFCameraViewTypeBlackAndWhite)
+                 {
+                     enhancedImage = [self filteredImageUsingEnhanceFilterOnImage:enhancedImage];
+                 }
+                 else
+                 {
+                     enhancedImage = [self filteredImageUsingContrastFilterOnImage:enhancedImage];
+                 }
+
+                 if (weakSelf.isBorderDetectionEnabled && rectangleDetectionConfidenceHighEnough(self->_imageDedectionConfidence))
+                 {
+                     CIRectangleFeature *rectangleFeature = [self biggestRectangleInRectangles:[[self highAccuracyRectangleDetector] featuresInImage:enhancedImage]];
+                     @autoreleasepool {
+                         if (rectangleFeature)
+                         {
+
+
+
+                             //UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0);
+                             enhancedImage = [self correctPerspectiveForImage:enhancedImage withFeatures:rectangleFeature];
+
+
+
+                             dispatch_sync(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+                                 CGRect rect = CGRectMake(0,0, enhancedImage.extent.size.height, enhancedImage.extent.size.width);
+
+                                 CGSize newSize = CGSizeMake(enhancedImage.extent.size.height,enhancedImage.extent.size.width);
+                                 UIGraphicsBeginImageContextWithOptions(newSize, NO, 1);
+
+                                 UIImage *tmpImage = [UIImage imageWithCIImage:enhancedImage scale:1.0 orientation:UIImageOrientationRight];
+                                 NSLog(@"width %f,height %f", enhancedImage.extent.size.width, enhancedImage.extent.size.height);
+                                 [tmpImage drawInRect:rect blendMode:kCGBlendModeHue alpha:1.0];
+
+
+                                 UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+                                 UIImage *initialImage = [UIImage imageWithData:imageData];
+                                 UIGraphicsEndImageContext();
+                                 [weakSelf hideGLKView:NO completion:nil];
+                                 completionHandler(image, initialImage, rectangleFeature);
+
+                             });
+
+
+                         }
+                     }
+                 } else {
+                     [weakSelf hideGLKView:NO completion:nil];
+                     UIImage *initialImage = [UIImage imageWithData:imageData];
+                     completionHandler(initialImage, initialImage, nil);
+                 }
+
              }
              else
              {
-                 enhancedImage = [self filteredImageUsingContrastFilterOnImage:enhancedImage];
-             }
-
-             if (weakSelf.isBorderDetectionEnabled && rectangleDetectionConfidenceHighEnough(self->_imageDedectionConfidence))
-             {
-                 CIRectangleFeature *rectangleFeature = [self biggestRectangleInRectangles:[[self highAccuracyRectangleDetector] featuresInImage:enhancedImage]];
-                 @autoreleasepool {
-                     if (rectangleFeature)
-                     {
-
-
-
-                         //UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0);
-                         enhancedImage = [self correctPerspectiveForImage:enhancedImage withFeatures:rectangleFeature];
-
-
-
-                         dispatch_sync(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-                             CGRect rect = CGRectMake(0,0, enhancedImage.extent.size.height, enhancedImage.extent.size.width);
-
-                             CGSize newSize = CGSizeMake(enhancedImage.extent.size.height,enhancedImage.extent.size.width);
-                             UIGraphicsBeginImageContextWithOptions(newSize, NO, 1);
-
-                             UIImage *tmpImage = [UIImage imageWithCIImage:enhancedImage scale:1.0 orientation:UIImageOrientationRight];
-                             NSLog(@"width %f,height %f", enhancedImage.extent.size.width, enhancedImage.extent.size.height);
-                             [tmpImage drawInRect:rect blendMode:kCGBlendModeHue alpha:1.0];
-
-
-                             UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-                             UIImage *initialImage = [UIImage imageWithData:imageData];
-                             UIGraphicsEndImageContext();
-                             [weakSelf hideGLKView:NO completion:nil];
-                             completionHandler(image, initialImage, rectangleFeature);
-
-                         });
-
-
-                     }
-                 }
-             } else {
                  [weakSelf hideGLKView:NO completion:nil];
                  UIImage *initialImage = [UIImage imageWithData:imageData];
                  completionHandler(initialImage, initialImage, nil);
              }
-
-         }
-         else
-         {
-             [weakSelf hideGLKView:NO completion:nil];
-             UIImage *initialImage = [UIImage imageWithData:imageData];
-             completionHandler(initialImage, initialImage, nil);
-         }
+        }
+        
 
          _isCapturing = NO;
      }];
